@@ -1,23 +1,26 @@
-import socket               
+import socket
 import pickle
 from phe import paillier
 
-Host = socket.gethostname() 
+Host = socket.gethostname()
 KeyManagePort = 12001
 CompareServerPort = 12002
 
+
 def socketConn(host, port, msg):
-    s = socket.socket()             
+    s = socket.socket()
     s.connect((host, port))
     s.send(msg.encode())
     recvData = s.recv(1024)
     s.close()
-    return recvData
+    return recvData.decode()
+
 
 def createEncryptedPickle(data):
-    dataFile = open('pkls/dataFromClient1.pkl','wb')
+    dataFile = open('pkls/dataFromClient1.pkl', 'wb')
     pickle.dump(data, dataFile)
     dataFile.close()
+
 
 def data2ascii(data):
     dataReturn = []
@@ -28,21 +31,33 @@ def data2ascii(data):
         dataReturn.append(int(num))
     return dataReturn
 
+
 def encryptData(publicKey, data):
     encryptedData = [publicKey.encrypt(x) for x in data]
     return encryptedData
 
+
 def readPublicKey():
-    keyFile = open('pkls/publicKey.pkl','rb')
+    keyFile = open('pkls/publicKey.pkl', 'rb')
     publicKey = pickle.load(keyFile)
     return publicKey
+
 
 if __name__ == "__main__":
     data = ['H', 'C', 'S', 'O', 'N', 'Si']
     dataTrans = data2ascii(data)
+    print('[+] Data Load Successfully')
     socketConn(Host, KeyManagePort, 'GetMsg')
     publicKey = readPublicKey()
+    print('[+] PublicKey Load successfully')
     encryptedData = encryptData(publicKey, dataTrans)
     createEncryptedPickle(encryptedData)
-    print('[+] Begin Sending')
-    socketConn(Host, CompareServerPort, 'pkls/dataFromClient1.pkl')
+    print('[+] Data Encrypted Successfully and Begin Sending Encrypted Data')
+    msg = socketConn(Host, CompareServerPort, 'pkls/dataFromClient1.pkl')
+    if msg == 'Err':
+        print('[-] Error During Comparing ...')
+    else:
+        fileGet = open('pkls/index4Client1.pkl', 'rb')
+        indexGet = pickle.load(fileGet)
+        fileGet.close()
+        print('[+] CompareFinish and the same data has been shown as: ', indexGet)
